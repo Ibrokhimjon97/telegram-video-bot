@@ -37,9 +37,22 @@ def is_valid_url(url: str) -> bool:
 def get_video_info(url: str) -> dict:
     """Video haqida ma'lumot olish"""
     ydl_opts = {
-        'quiet': True,
-        'no_warnings': True,
+        'quiet': False,
+        'no_warnings': False,
         'extract_flat': False,
+        'socket_timeout': 30,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'web'],
+                'skip': ['hls', 'dash']
+            }
+        },
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-us,en;q=0.5',
+            'Sec-Fetch-Mode': 'navigate',
+        },
     }
     
     try:
@@ -52,7 +65,9 @@ def get_video_info(url: str) -> dict:
                 'thumbnail': info.get('thumbnail', ''),
             }
     except Exception as e:
-        logger.error(f"Video ma'lumotlarini olishda xato: {e}")
+        logger.error(f"Video ma'lumotlarini olishda xato: {str(e)}")
+        logger.error(f"URL: {url}")
+        logger.error(f"Exception type: {type(e).__name__}")
         return None
 
 
@@ -125,7 +140,14 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
         video_info = get_video_info(url)
         
         if not video_info:
-            await processing_msg.edit_text("❌ Video ma'lumotlarini olishda xatolik yuz berdi. Linkni tekshiring.")
+            await processing_msg.edit_text(
+                "❌ Video ma'lumotlarini olishda xatolik yuz berdi.\n\n"
+                "🔍 Tekshiring:\n"
+                "• Linkni to'g'ri nusxaladingizmi?\n"
+                "• Video hali mavjudmi?\n"
+                "• Internet ulanishingiz yaxshimi?\n\n"
+                "💡 Boshqa linkni yuboring yoki /help buyrug'ini ishlating."
+            )
             return
         
         # Kontekstga saqlash
@@ -272,6 +294,15 @@ async def download_video(query, url: str, quality: str):
         'quiet': False,
         'no_warnings': False,
         'merge_output_format': 'mp4',
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'web'],
+                'skip': ['hls', 'dash']
+            }
+        },
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
     }
     
     try:
@@ -322,9 +353,13 @@ async def download_video(query, url: str, quality: str):
                 await query.edit_message_text("❌ Fayl topilmadi.")
                 
     except Exception as e:
-        logger.error(f"Video yuklab olishda xato: {e}")
+        logger.error(f"Video yuklab olishda xato: {str(e)}")
+        logger.error(f"Quality: {quality}, URL: {url}")
+        error_msg = str(e)[:100]
         await query.edit_message_text(
-            f"❌ Yuklab olishda xatolik: {str(e)[:100]}"
+            f"❌ Yuklab olishda xatolik yuz berdi.\n\n"
+            f"Xato: {error_msg}\n\n"
+            f"💡 Qaytadan urinib ko'ring yoki boshqa sifatni tanlang."
         )
 
 
@@ -343,6 +378,15 @@ async def download_audio(query, url: str):
         }],
         'quiet': False,
         'no_warnings': False,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'web'],
+                'skip': ['hls', 'dash']
+            }
+        },
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
     }
     
     try:
@@ -382,9 +426,13 @@ async def download_audio(query, url: str):
                 await query.edit_message_text("❌ Fayl topilmadi.")
                 
     except Exception as e:
-        logger.error(f"Audio yuklab olishda xato: {e}")
+        logger.error(f"Audio yuklab olishda xato: {str(e)}")
+        logger.error(f"URL: {url}")
+        error_msg = str(e)[:100]
         await query.edit_message_text(
-            f"❌ Yuklab olishda xatolik: {str(e)[:100]}"
+            f"❌ Yuklab olishda xatolik yuz berdi.\n\n"
+            f"Xato: {error_msg}\n\n"
+            f"💡 Qaytadan urinib ko'ring yoki video formatini tanlang."
         )
 
 
@@ -397,6 +445,15 @@ async def get_direct_download_link(query, url: str):
             'quiet': True,
             'no_warnings': True,
             'extract_flat': False,
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'web'],
+                    'skip': ['hls', 'dash']
+                }
+            },
+            'http_headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            },
         }
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -477,7 +534,8 @@ async def get_direct_download_link(query, url: str):
             await query.edit_message_text(message, parse_mode='HTML')
             
     except Exception as e:
-        logger.error(f"Direct link olishda xato: {e}")
+        logger.error(f"Direct link olishda xato: {str(e)}")
+        logger.error(f"URL: {url}")
         await query.edit_message_text(
             f"❌ Linkni olishda xatolik yuz berdi.\n\n"
             f"Asl link: <code>{url}</code>\n\n"
