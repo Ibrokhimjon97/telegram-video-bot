@@ -41,7 +41,6 @@ def get_video_info(url: str) -> dict:
         'no_warnings': False,
         'extract_flat': False,
         'socket_timeout': 30,
-        'cookiesfrombrowser': ('chrome', 'firefox'),
         'extractor_args': {
             'youtube': {
                 'player_client': ['ios', 'android', 'mweb'],
