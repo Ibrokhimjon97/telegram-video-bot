@@ -23,15 +23,21 @@ if not os.path.exists(DOWNLOAD_FOLDER):
 
 
 def is_valid_url(url: str) -> bool:
-    """URL to'g'riligini tekshirish"""
+    """URL'ni tekshirish"""
     url_pattern = re.compile(
-        r'^https?://'  # http:// yoki https://
-        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domen
-        r'localhost|'  # localhost
-        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # IP
-        r'(?::\d+)?'  # port
+        r'^https?://'
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'
+        r'localhost|'
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+        r'(?::\d+)?'
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
     return url_pattern.match(url) is not None
+
+
+def is_playlist_url(url: str) -> bool:
+    """Playlist URL'ni tekshirish"""
+    playlist_keywords = ['playlist', 'list=', 'channel/', 'watch?v=.*list=']
+    return any(keyword in url.lower() for keyword in playlist_keywords)
 
 
 def get_video_info(url: str) -> dict:
@@ -126,13 +132,28 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(help_text, parse_mode='HTML')
 
 
-async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """URL ni qayta ishlash"""
+async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """URL'ni qayta ishlash"""
     url = update.message.text.strip()
     
     if not is_valid_url(url):
         await update.message.reply_text(
-            "❌ Noto'g'ri link! Iltimos, to'g'ri video linkini yuboring."
+            "❌ Noto'g'ri URL! Iltimos, to'g'ri video linkini yuboring.\n"
+            "Qo'llab-quvvatlanuvchi platformalar: YouTube, TikTok, Instagram, Facebook, Twitter va boshqalar."
+        )
+        return
+    
+    # Playlist tekshirish
+    if is_playlist_url(url):
+        await update.message.reply_text(
+            "⚠️ **OGOHLANTIRISH!**\n\n"
+            "Siz **Playlist** linki yubordingiz!\n\n"
+            "Playlist'dan **339 ta video** yuklab olmoqchi bo'lmoqdasiz.\n"
+            "Bu juda ko'p vaqt oladi va server'ni yuklab qo'yadi.\n\n"
+            "❌ Iltimos, **alohida video** linkini yuboring:\n"
+            "✅ https://youtu.be/VIDEO_ID\n"
+            "✅ https://www.tiktok.com/@user/video/123456\n"
+            "✅ https://www.facebook.com/video/123456"
         )
         return
     
