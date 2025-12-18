@@ -36,8 +36,17 @@ def is_valid_url(url: str) -> bool:
 
 def is_playlist_url(url: str) -> bool:
     """Playlist URL'ni tekshirish"""
-    playlist_keywords = ['playlist', 'list=', 'channel/', 'watch?v=.*list=']
-    return any(keyword in url.lower() for keyword in playlist_keywords)
+    url_lower = url.lower()
+    # Playlist aniqlash
+    if 'playlist' in url_lower or '/channel/' in url_lower:
+        return True
+    # YouTube playlist with list parameter
+    if 'list=' in url_lower and 'watch?v=' not in url_lower:
+        return True
+    # YouTube mix/recommendations
+    if 'list=RD' in url_lower or 'list=PL' in url_lower:
+        return True
+    return False
 
 
 def get_video_info(url: str) -> dict:
